@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>근로기준법 퀴즈</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -365,6 +366,17 @@
   </div>
 
   <script>
+  /* ============================================
+   * Supabase 클라이언트 초기화
+   *  - 모든 응시 기록은 public.users 테이블에 저장
+   *  - 리더보드는 employee_id 기준으로 집계
+   * ============================================ */
+  const SUPABASE_URL = 'https://fagptpowfetixxjbphls.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mtl2cY6Gv2de2TJSXemCvw_xKxgSW_g';
+  const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+    : null;
+
   /* ============================================
    * 전역 상태
    * ============================================ */
@@ -1139,117 +1151,106 @@
   });
 
   /* ============================================
-   * Storage 연동 (window.storage Persistent Storage API)
-   *  - 모든 호출은 try-catch로 감싸 실패 시 무시
-   *  - 동기/비동기 어느 쪽이든 안전하게 동작하도록 await 사용
+   * Supabase 연동
+   *  - public.users 테이블 한 곳에 모든 응시 기록을 저장
+   *  - 리더보드는 employee_id 기준으로 클라이언트에서 집계
+   *  - 모든 호출은 try-catch로 감싸고, 실패 시 호출자 측에서 안내 처리
    * ============================================ */
 
-  // window.storage 존재 여부 확인
-  function hasStorage() {
-    return typeof window !== 'undefined' && window.storage && typeof window.storage.setItem === 'function';
+  // Supabase 클라이언트 사용 가능 여부
+  function hasSupabase() {
+    return supabaseClient !== null;
   }
 
-  // 안전한 setItem
-  async function safeSet(key, value, options) {
-    if (!hasStorage()) throw new Error('storage unavailable');
-    return await window.storage.setItem(key, value, options);
+  // 응시 결과 한 건을 users 테이블에 INSERT
+  async function insertAttempt(row) {
+    if (!hasSupabase()) throw new Error('supabase unavailable');
+    const { error } = await supabaseClient.from('users').insert(row);
+    if (error) throw error;
   }
 
-  // 안전한 getItem
-  async function safeGet(key) {
-    if (!hasStorage()) throw new Error('storage unavailable');
-    try {
-      return await window.storage.getItem(key);
-    } catch (e) {
-      return null;
-    }
+  // 특정 사번의 모든 응시 기록(시간순) 조회
+  async function fetchMyAttempts(employeeId) {
+    if (!hasSupabase()) throw new Error('supabase unavailable');
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('employee_id,name,score,total,wrong_ids,category_scores,created_at')
+      .eq('employee_id', employeeId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
   }
 
-  // 리더보드 키 모두 조회 (shared:true 영역)
-  async function safeListLeaderboard() {
-    if (!hasStorage()) throw new Error('storage unavailable');
-    // 다양한 list API 시그니처 호환
-    const out = [];
-    try {
-      const list = typeof window.storage.list === 'function'
-        ? await window.storage.list({ prefix: 'leaderboard:', shared: true })
-        : null;
-      if (Array.isArray(list)) {
-        for (const item of list) {
-          // list가 키 문자열 배열이면 각각 조회, 객체 배열이면 그대로 사용
-          if (typeof item === 'string') {
-            const v = await safeGet(item);
-            if (v) out.push(typeof v === 'string' ? JSON.parse(v) : v);
-          } else if (item && typeof item === 'object') {
-            const v = item.value !== undefined ? item.value : (item.key ? await safeGet(item.key) : null);
-            if (v) out.push(typeof v === 'string' ? JSON.parse(v) : v);
-          }
+  // 전체 응시 기록을 가져와 employee_id 단위로 리더보드 항목으로 집계
+  async function fetchLeaderboardEntries() {
+    if (!hasSupabase()) throw new Error('supabase unavailable');
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('employee_id,name,score,created_at')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    const byEmpId = new Map();
+    for (const row of (data || [])) {
+      const empId = row.employee_id;
+      const entry = byEmpId.get(empId);
+      if (!entry) {
+        byEmpId.set(empId, {
+          name: row.name,
+          employeeId: empId,
+          bestScore: row.score,
+          firstAchievedAt: row.created_at,
+          totalAttempts: 1,
+          lastDate: row.created_at,
+        });
+      } else {
+        entry.totalAttempts += 1;
+        entry.lastDate = row.created_at;        // 시간 오름차순 → 마지막이 최신
+        entry.name = row.name;                  // 최신 이름 반영
+        if (row.score > entry.bestScore) {
+          entry.bestScore = row.score;
+          entry.firstAchievedAt = row.created_at;
         }
       }
-    } catch (e) {
-      // 무시 — 호출자가 빈 배열로 처리
     }
-    return out;
+    return Array.from(byEmpId.values());
   }
 
-  // 결과 저장 — 리더보드 + 개인 기록 양쪽 갱신
+  // DB row → 화면에서 쓰는 record 객체로 변환
+  function attemptRowToRecord(row) {
+    return {
+      date: row.created_at,
+      score: row.score,
+      total: row.total,
+      wrongIds: Array.isArray(row.wrong_ids) ? row.wrong_ids : [],
+      categoryScores: Array.isArray(row.category_scores) ? row.category_scores : [],
+    };
+  }
+
+  // 결과 저장 — INSERT 후 사번 기준 누적 기록을 다시 조회해 userData로 반환
   async function saveResult() {
-    const now = new Date();
-    const dateIso = now.toISOString();
     const catScores = calcCategoryScores();
 
-    // 1) 개인 상세 기록 (shared: false) — 키: 사번
-    const userKey = `user:${state.employeeId}`;
-    let userData;
-    try {
-      const raw = await safeGet(userKey);
-      userData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
-    } catch (e) {
-      userData = null;
-    }
-
-    if (!userData || !Array.isArray(userData.records)) {
-      userData = { name: state.userName, employeeId: state.employeeId, records: [], bestScore: 0 };
-    }
-
-    const newRecord = {
-      date: dateIso,
+    const row = {
+      employee_id: state.employeeId,
+      name: state.userName,
       score: state.score,
       total: 20,
-      wrongIds: [...state.wrongIds],
-      categoryScores: catScores.map(c => ({ key: c.key, correct: c.correct, total: c.total })),
+      wrong_ids: [...state.wrongIds],
+      category_scores: catScores.map(c => ({ key: c.key, correct: c.correct, total: c.total })),
     };
-    userData.records.push(newRecord);
-    userData.bestScore  = Math.max(userData.bestScore || 0, state.score);
-    userData.name       = state.userName;     // 이름 변경 시 최신 이름 반영
-    userData.employeeId = state.employeeId;
 
-    await safeSet(userKey, JSON.stringify(userData), { shared: false });
+    await insertAttempt(row);
 
-    // 2) 리더보드 요약 (shared: true) — 키: 사번
-    const lbKey = `leaderboard:${state.employeeId}`;
-    let lbData;
-    try {
-      const raw = await safeGet(lbKey);
-      lbData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
-    } catch (e) {
-      lbData = null;
-    }
-
-    const wasNewBest = !lbData || state.score > (lbData.bestScore || 0);
-    lbData = {
+    const attempts = await fetchMyAttempts(state.employeeId);
+    const userData = {
       name: state.userName,
       employeeId: state.employeeId,
-      bestScore: Math.max(lbData?.bestScore || 0, state.score),
-      // bestScore가 갱신될 때만 firstAchievedAt(=최초 달성일) 갱신
-      firstAchievedAt: wasNewBest ? dateIso : (lbData.firstAchievedAt || dateIso),
-      totalAttempts: (lbData?.totalAttempts || 0) + 1,
-      lastDate: dateIso,
+      bestScore: attempts.reduce((m, a) => Math.max(m, a.score), 0),
+      records: attempts.map(attemptRowToRecord),
     };
 
-    await safeSet(lbKey, JSON.stringify(lbData), { shared: true });
-
-    return { userData, lbData };
+    return { userData };
   }
 
   /* ============================================
@@ -1261,7 +1262,7 @@
 
     let entries = [];
     try {
-      entries = await safeListLeaderboard();
+      entries = await fetchLeaderboardEntries();
     } catch (e) {
       entries = [];
       errEl.classList.remove('hidden');
