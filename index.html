@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>근로기준법 퀴즈</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#EEF4FB',
+              100: '#D6E4F2',
+              200: '#A9C3E0',
+              300: '#7BA1CE',
+              400: '#4D80BC',
+              500: '#1B4F8A',
+              600: '#174273',
+              700: '#12355C',
+              800: '#0E2845',
+              900: '#091B2E',
+            },
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Malgun Gothic"', 'Roboto', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body { height: 100%; }
+    body {
+      background: linear-gradient(180deg, #EEF4FB 0%, #FFFFFF 60%);
+      -webkit-font-smoothing: antialiased;
+    }
+    /* 모바일 퍼스트 컨테이너 */
+    .app-shell {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 24px 20px 32px;
+    }
+    /* 화면 전환 (기본은 모두 숨김, .active만 표시) */
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeIn 200ms ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    /* 터치 타겟 최소 높이 */
+    button, input { min-height: 44px; }
+  </style>
+</head>
+<body class="font-sans text-slate-800">
+
+  <div class="app-shell">
+
+    <!-- ============================================ -->
+    <!-- 화면 1: 시작 화면                              -->
+    <!-- ============================================ -->
+    <section id="screen-start" class="screen active">
+      <div class="text-center pt-10 pb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-500 text-white text-3xl font-bold shadow-lg shadow-brand-500/30">
+          ⚖️
+        </div>
+        <h1 class="mt-5 text-2xl font-bold text-brand-700">근로기준법 퀴즈</h1>
+        <p class="mt-2 text-sm text-slate-500">사내 직원 교육용 · 2026년 5월 1일 시행 기준</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mt-4">
+        <label for="input-name" class="block text-sm font-semibold text-slate-700 mb-2">
+          이름
+        </label>
+        <input
+          id="input-name"
+          type="text"
+          maxlength="20"
+          placeholder="예) 홍길동"
+          class="w-full rounded-xl border border-slate-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition"
+          autocomplete="off"
+        />
+
+        <label for="input-empno" class="mt-4 block text-sm font-semibold text-slate-700 mb-2">
+          사번 <span class="text-xs text-slate-400 font-normal">· 동명이인 구분에 사용됩니다</span>
+        </label>
+        <input
+          id="input-empno"
+          type="text"
+          maxlength="20"
+          placeholder="예) E12345"
+          class="w-full rounded-xl border border-slate-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition"
+          autocomplete="off"
+        />
+
+        <p id="input-warning" class="mt-2 text-xs text-red-500 hidden">이름과 사번을 모두 입력해야 시작할 수 있습니다.</p>
+
+        <button
+          id="btn-start"
+          class="mt-5 w-full rounded-xl bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+          disabled
+        >
+          시작하기
+        </button>
+      </div>
+
+      <div class="mt-6 text-center text-xs text-slate-400">
+        총 20문항 · 약 10분 소요
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 화면 2: 퀴즈 안내 화면                         -->
+    <!-- ============================================ -->
+    <section id="screen-intro" class="screen">
+      <div class="pt-6">
+        <button id="btn-back-to-start" class="text-sm text-slate-500 hover:text-brand-600 inline-flex items-center gap-1">
+          <span>←</span> 처음으로
+        </button>
+      </div>
+
+      <div class="text-center pt-4 pb-6">
+        <p class="text-sm text-slate-500">반갑습니다,</p>
+        <h2 class="mt-1 text-2xl font-bold text-brand-700">
+          <span id="greet-name">-</span> 님
+        </h2>
+        <p class="mt-1 text-xs text-slate-400">사번 <span id="greet-empno">-</span></p>
+        <p class="mt-2 text-sm text-slate-600">아래 4개 카테고리, 총 20문항을 차례대로 풀게 됩니다.</p>
+      </div>
+
+      <!-- 카테고리 순서 카드 -->
+      <ol id="category-cards" class="space-y-3"></ol>
+
+      <div class="mt-6 bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm text-brand-700">
+        <p class="font-semibold mb-1">📌 안내</p>
+        <ul class="list-disc pl-5 space-y-1 text-brand-700/90">
+          <li>각 문항은 답을 제출하면 즉시 정답과 해설이 표시됩니다.</li>
+          <li>중간에 이전 문항으로 돌아갈 수 없습니다.</li>
+          <li>완료 후 누적 순위가 기록됩니다.</li>
+        </ul>
+      </div>
+
+      <button
+        id="btn-go-quiz"
+        class="mt-6 w-full rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+      >
+        퀴즈 시작 →
+      </button>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 화면 3: 문항 화면                              -->
+    <!-- ============================================ -->
+    <section id="screen-quiz" class="screen">
+
+      <!-- ① 카테고리 스텝 인디케이터 (상단 고정 헤더) -->
+      <div class="sticky top-0 -mx-5 px-5 pt-4 pb-3 bg-gradient-to-b from-brand-50 via-brand-50 to-brand-50/80 backdrop-blur-sm z-10 border-b border-brand-100">
+        <ol id="step-indicator" class="flex items-center justify-between gap-1.5"></ol>
+      </div>
+
+      <!-- ② 진행률 표시 -->
+      <div class="mt-5">
+        <div class="flex items-center justify-between text-xs font-medium">
+          <span id="progress-cat" class="text-brand-600">근로시간 1 / 5</span>
+          <span id="progress-total" class="text-slate-500">전체 1 / 20</span>
+        </div>
+        <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div id="progress-bar" class="h-full bg-brand-500 rounded-full transition-all duration-300" style="width: 5%"></div>
+        </div>
+      </div>
+
+      <!-- ③ ④ 문항 영역 -->
+      <div class="mt-5 bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <!-- 문항 유형 뱃지 -->
+        <div class="flex items-center gap-2">
+          <span id="q-type-badge" class="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full"></span>
+          <span id="q-num-badge" class="text-xs text-slate-400">Q.1</span>
+        </div>
+
+        <!-- 사례형 상황 박스 (사례형일 때만 표시) -->
+        <div id="q-case-box" class="hidden mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <p class="font-semibold mb-1">📋 상황</p>
+          <p id="q-case-text" class="leading-relaxed"></p>
+        </div>
+
+        <!-- 문항 텍스트 -->
+        <p id="q-text" class="mt-3 text-base font-semibold text-slate-800 leading-relaxed"></p>
+
+        <!-- ⑤ 보기 영역 -->
+        <div id="q-options" class="mt-5 space-y-2.5"></div>
+
+        <!-- ⑦ 결과 배너 (제출 후 표시) -->
+        <div id="result-banner" class="hidden mt-4 rounded-xl p-3 text-sm font-semibold"></div>
+
+        <!-- ⑧ 해설 박스 (제출 후 표시) -->
+        <div id="explanation-box" class="hidden mt-3 rounded-xl bg-slate-50 border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-bold text-slate-700">💡 해설</span>
+            <span id="reference-badge" class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700"></span>
+          </div>
+          <p id="explanation-text" class="text-sm text-slate-700 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- ⑥ 답안 제출 / 다음 문항 버튼 -->
+      <button
+        id="btn-submit"
+        class="mt-5 w-full rounded-xl bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+        disabled
+      >
+        정답 확인
+      </button>
+      <button
+        id="btn-next"
+        class="hidden mt-5 w-full rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+      >
+        다음 문항 →
+      </button>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 화면 4: 결과 요약 화면                         -->
+    <!-- ============================================ -->
+    <section id="screen-result" class="screen">
+
+      <!-- ① 총점 영역 -->
+      <div class="text-center pt-6 pb-2">
+        <p class="text-sm text-slate-500"><span id="result-name">-</span>님 <span class="text-xs text-slate-400">(사번 <span id="result-empno">-</span>)</span>의 퀴즈 결과</p>
+
+        <div class="mt-4 inline-flex flex-col items-center bg-white rounded-2xl shadow-sm border border-slate-100 px-8 py-6">
+          <div class="flex items-baseline gap-1">
+            <span id="result-score" class="text-5xl font-bold text-brand-600">0</span>
+            <span class="text-xl text-slate-400 font-semibold">/ 20</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-500">정답률 <span id="result-rate" class="font-semibold text-slate-700">0%</span></p>
+        </div>
+
+        <div id="result-message" class="mt-4 mx-auto max-w-[420px] rounded-xl p-3 text-sm font-semibold"></div>
+      </div>
+
+      <!-- ② 카테고리별 결과 -->
+      <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <h3 class="text-sm font-bold text-slate-700 mb-3">📊 카테고리별 결과</h3>
+        <ul id="result-by-category" class="space-y-3"></ul>
+        <p id="weakest-note" class="hidden mt-3 text-xs text-red-600">
+          ⚠️ <span id="weakest-name"></span>이(가) 가장 취약한 영역입니다.
+        </p>
+      </div>
+
+      <!-- ③ 오답 문항 목록 (토글) -->
+      <div class="mt-4 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <button id="btn-toggle-wrong" class="w-full flex items-center justify-between px-5 py-4 text-left">
+          <span class="text-sm font-bold text-slate-700">
+            ❌ 오답 문항 <span id="wrong-count" class="text-red-500">0</span>개
+          </span>
+          <svg id="wrong-chevron" class="w-5 h-5 text-slate-400 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.3 7.3a1 1 0 011.4 0L10 10.6l3.3-3.3a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <ul id="wrong-list" class="hidden border-t border-slate-100 divide-y divide-slate-100"></ul>
+        <p id="wrong-empty" class="hidden border-t border-slate-100 px-5 py-6 text-center text-sm text-slate-500">
+          🎉 오답 없이 모두 맞히셨습니다!
+        </p>
+      </div>
+
+      <!-- ④ 하단 버튼 -->
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button
+          id="btn-retry"
+          class="rounded-xl bg-white border-2 border-brand-500 text-brand-600 hover:bg-brand-50 font-semibold py-3 transition"
+        >
+          🔄 다시 도전하기
+        </button>
+        <button
+          id="btn-leaderboard"
+          class="rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+        >
+          🏆 순위 보기
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 화면 5: 리더보드 (누적 순위)                  -->
+    <!-- ============================================ -->
+    <section id="screen-leaderboard" class="screen">
+      <div class="text-center pt-6 pb-4">
+        <h2 class="text-2xl font-bold text-brand-700">🏆 누적 순위</h2>
+        <p class="mt-1 text-sm text-slate-500">전체 응시자 순위입니다</p>
+      </div>
+
+      <!-- ② 내 기록 요약 -->
+      <div id="my-summary" class="bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl shadow-md shadow-brand-500/20 p-5 text-white">
+        <p class="text-xs opacity-80"><span id="my-name">-</span>님 <span class="opacity-70">(사번 <span id="my-empno">-</span>)</span>의 기록</p>
+        <div class="mt-2 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p class="text-[10px] opacity-80">현재 순위</p>
+            <p class="mt-0.5 text-xl font-bold"><span id="my-rank">-</span><span class="text-xs opacity-80">위</span></p>
+          </div>
+          <div class="border-x border-white/20">
+            <p class="text-[10px] opacity-80">최고 점수</p>
+            <p class="mt-0.5 text-xl font-bold"><span id="my-best">-</span><span class="text-xs opacity-80">/20</span></p>
+          </div>
+          <div>
+            <p class="text-[10px] opacity-80">총 응시</p>
+            <p class="mt-0.5 text-xl font-bold"><span id="my-attempts">-</span><span class="text-xs opacity-80">회</span></p>
+          </div>
+        </div>
+        <p id="my-delta" class="hidden mt-3 text-center text-xs bg-white/15 rounded-lg py-1.5"></p>
+      </div>
+
+      <!-- 저장 에러 안내 -->
+      <div id="storage-error" class="hidden mt-4 rounded-xl p-3 text-sm bg-amber-50 border border-amber-200 text-amber-800">
+        ⚠️ 저장소 접근에 실패하여 누적 순위를 불러올 수 없습니다. 이번 회차 결과만 표시됩니다.
+      </div>
+
+      <!-- ① 전체 리더보드 테이블 -->
+      <div class="mt-4 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-100">
+          <h3 class="text-sm font-bold text-slate-700">전체 순위</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs">
+              <tr>
+                <th class="text-left px-3 py-2 font-semibold">순위</th>
+                <th class="text-left px-2 py-2 font-semibold">이름 / 사번</th>
+                <th class="text-right px-2 py-2 font-semibold">최고점</th>
+                <th class="text-right px-2 py-2 font-semibold">정답률</th>
+                <th class="text-right px-3 py-2 font-semibold">응시</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <p id="leaderboard-empty" class="hidden px-5 py-8 text-center text-sm text-slate-500">
+          아직 기록이 없습니다.
+        </p>
+      </div>
+
+      <!-- ③ 하단 버튼 -->
+      <button
+        id="btn-back-home"
+        class="mt-6 w-full rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 transition shadow-md shadow-brand-500/20"
+      >
+        🔄 다시 도전하기
+      </button>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 저장 중 로딩 오버레이                          -->
+    <!-- ============================================ -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl shadow-xl px-6 py-5 flex items-center gap-3">
+        <svg class="animate-spin w-5 h-5 text-brand-500" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+          <path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+        </svg>
+        <span class="text-sm font-semibold text-slate-700">기록 저장 중…</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  /* ============================================
+   * 전역 상태
+   * ============================================ */
+  const state = {
+    userName: '',
+    employeeId: '',          // 사번 (동명이인 구분)
+    currentQ: 0,
+    answers: [],
+    score: 0,
+    wrongIds: [],
+    startTime: null,
+  };
+
+  /* ============================================
+   * 카테고리 정의 (순서 고정)
+   * ============================================ */
+  const CATEGORIES = [
+    { key: '근로시간',            icon: '🕘', desc: '법정근로시간, 연장·야간근로' },
+    { key: '연차휴가 및 휴일',    icon: '🏖️', desc: '연차, 주휴일, 공휴일' },
+    { key: '임금 및 퇴직금',      icon: '💰', desc: '최저임금, 임금지급, 퇴직금' },
+    { key: '근로계약 및 취업규칙', icon: '📄', desc: '근로계약서, 해고, 취업규칙' },
+  ];
+
+  /* ============================================
+   * 문항 데이터 (총 20문항)
+   *  - 인덱스 0~4   : 근로시간
+   *  - 인덱스 5~9   : 연차휴가 및 휴일
+   *  - 인덱스 10~14 : 임금 및 퇴직금
+   *  - 인덱스 15~19 : 근로계약 및 취업규칙
+   * ============================================ */
+  const questions = [
+    // ── 근로시간 (5) ──────────────────────────────
+    {
+      id: 1,
+      category: '근로시간',
+      type: 'multiple_choice',
+      question: '근로기준법상 1주간 법정근로시간의 한도는 휴게시간을 제외하고 몇 시간인가?',
+      options: ['① 35시간', '② 40시간', '③ 44시간', '④ 48시간'],
+      answer: 1,
+      explanation: '1주간 법정근로시간은 휴게시간을 제외하고 40시간을 초과할 수 없습니다. 1일 기준으로는 8시간을 한도로 합니다.',
+      reference: '근로기준법 제50조',
+    },
+    {
+      id: 2,
+      category: '근로시간',
+      type: 'ox',
+      question: '당사자 간 합의가 있으면 1주간 12시간을 한도로 연장근로를 할 수 있다.',
+      options: ['O', 'X'],
+      answer: 0,
+      explanation: '당사자 간 합의가 있는 경우 1주 12시간을 한도로 연장근로가 가능합니다. (법정근로 40시간 + 연장 12시간 = 최대 52시간)',
+      reference: '근로기준법 제53조 제1항',
+    },
+    {
+      id: 3,
+      category: '근로시간',
+      type: 'multiple_choice',
+      question: '근로시간이 8시간인 경우 사용자가 근로자에게 근로시간 도중 부여해야 하는 휴게시간은 최소 몇 분인가?',
+      options: ['① 30분', '② 45분', '③ 60분', '④ 90분'],
+      answer: 2,
+      explanation: '근로시간이 4시간인 경우 30분 이상, 8시간인 경우 60분(1시간) 이상의 휴게시간을 근로시간 도중에 주어야 합니다.',
+      reference: '근로기준법 제54조',
+    },
+    {
+      id: 4,
+      category: '근로시간',
+      type: 'case',
+      question: '시급 10,000원인 근로자가 야간근로(밤 10시~새벽 6시) 2시간을 했다. 야간근로에 대해 추가로 지급해야 하는 가산수당은 얼마인가? (가산분만 계산)',
+      options: ['① 5,000원', '② 10,000원', '③ 15,000원', '④ 20,000원'],
+      answer: 1,
+      explanation: '야간근로에 대해서는 통상임금의 50% 이상을 가산하여 지급해야 합니다. 10,000원 × 2시간 × 50% = 10,000원이 가산수당입니다.',
+      reference: '근로기준법 제56조 제3항',
+    },
+    {
+      id: 5,
+      category: '근로시간',
+      type: 'multiple_choice',
+      question: '취업규칙으로 도입할 수 있는 탄력적 근로시간제의 단위기간은 최대 몇 주 이내인가?',
+      options: ['① 1주', '② 2주', '③ 3주', '④ 4주'],
+      answer: 1,
+      explanation: '취업규칙(또는 이에 준하는 것)으로 정할 수 있는 탄력적 근로시간제의 단위기간은 2주 이내입니다. 2주를 초과하는 경우 근로자대표와의 서면합의가 필요합니다.',
+      reference: '근로기준법 제51조 제1항',
+    },
+
+    // ── 연차휴가 및 휴일 (5) ──────────────────────
+    {
+      id: 6,
+      category: '연차휴가 및 휴일',
+      type: 'multiple_choice',
+      question: '계속근로기간이 1년 미만인 근로자에게 개근 시 부여되는 연차유급휴가의 발생 기준은?',
+      options: [
+        '① 1개월 개근 시 1일',
+        '② 2개월 개근 시 1일',
+        '③ 3개월 개근 시 1일',
+        '④ 6개월 개근 시 1일',
+      ],
+      answer: 0,
+      explanation: '계속근로기간이 1년 미만인 근로자 또는 1년간 80% 미만 출근한 근로자에게는 1개월 개근 시 1일의 유급휴가를 주어야 합니다. 최대 11일까지 발생합니다.',
+      reference: '근로기준법 제60조 제2항',
+    },
+    {
+      id: 7,
+      category: '연차휴가 및 휴일',
+      type: 'multiple_choice',
+      question: '계속근로기간 1년간 80% 이상 출근한 근로자에게 부여되는 연차유급휴가는 며칠인가?',
+      options: ['① 10일', '② 11일', '③ 15일', '④ 20일'],
+      answer: 2,
+      explanation: '1년간 80% 이상 출근한 근로자에게는 15일의 유급휴가를 주어야 합니다. 이후 3년 이상 계속근로 시 매 2년마다 1일을 가산하며, 한도는 25일입니다.',
+      reference: '근로기준법 제60조 제1항·제4항',
+    },
+    {
+      id: 8,
+      category: '연차휴가 및 휴일',
+      type: 'ox',
+      question: '주휴일은 1주간 소정근로일을 개근한 근로자에게 유급으로 부여한다.',
+      options: ['O', 'X'],
+      answer: 0,
+      explanation: '사용자는 1주간 소정근로일을 개근한 근로자에게 1주 평균 1회 이상의 유급휴일을 보장해야 합니다(주휴일).',
+      reference: '근로기준법 제55조 제1항, 시행령 제30조',
+    },
+    {
+      id: 9,
+      category: '연차휴가 및 휴일',
+      type: 'multiple_choice',
+      question: '사용자가 연차휴가 사용촉진 조치를 적법하게 이행했음에도 근로자가 사용하지 않은 미사용 연차에 대해, 사용자는?',
+      options: [
+        '① 미사용 일수만큼 수당으로 전액 지급해야 한다',
+        '② 미사용 연차에 대한 보상의무가 면제된다',
+        '③ 다음 해로 이월시켜야 한다',
+        '④ 미사용 일수의 50%만 지급한다',
+      ],
+      answer: 1,
+      explanation: '사용자가 법정 절차에 따라 연차 사용촉진 조치를 적법하게 이행했는데도 근로자가 휴가를 사용하지 않은 경우, 미사용 연차에 대한 보상의무는 면제됩니다.',
+      reference: '근로기준법 제61조',
+    },
+    {
+      id: 10,
+      category: '연차휴가 및 휴일',
+      type: 'ox',
+      question: '관공서 공휴일(법정공휴일)은 5인 이상 사업장의 경우 유급휴일로 보장된다.',
+      options: ['O', 'X'],
+      answer: 0,
+      explanation: '근로기준법 제55조 제2항에 따라 상시 근로자 5인 이상 사업장은 관공서 공휴일 및 대체공휴일을 유급휴일로 보장해야 합니다.',
+      reference: '근로기준법 제55조 제2항, 시행령 제30조 제2항',
+    },
+
+    // ── 임금 및 퇴직금 (5) ────────────────────────
+    {
+      id: 11,
+      category: '임금 및 퇴직금',
+      type: 'multiple_choice',
+      question: '근로기준법 제43조에서 정한 임금 지급의 4대 원칙에 해당하지 <strong class="text-red-600">않는</strong> 것은?',
+      options: [
+        '① 통화불 원칙',
+        '② 직접불 원칙',
+        '③ 전액불 원칙',
+        '④ 분할지급 원칙',
+      ],
+      answer: 3,
+      explanation: '임금 지급의 4대 원칙은 통화불·직접불·전액불·매월 1회 이상 정기불입니다. 분할지급은 원칙에 어긋납니다.',
+      reference: '근로기준법 제43조',
+    },
+    {
+      id: 12,
+      category: '임금 및 퇴직금',
+      type: 'multiple_choice',
+      question: '사용자의 귀책사유로 휴업을 한 경우, 사용자가 근로자에게 지급해야 하는 휴업수당은 평균임금의 몇 % 이상인가?',
+      options: ['① 50%', '② 60%', '③ 70%', '④ 100%'],
+      answer: 2,
+      explanation: '사용자의 귀책사유로 휴업하는 경우 평균임금의 70% 이상을 휴업수당으로 지급해야 합니다. 예) 평균임금 일 100,000원, 휴업 5일 → 100,000원 × 70% × 5일 = 350,000원. 평균임금의 70%가 통상임금을 초과하면 통상임금을 지급할 수 있습니다.',
+      reference: '근로기준법 제46조',
+    },
+    {
+      id: 13,
+      category: '임금 및 퇴직금',
+      type: 'multiple_choice',
+      question: '퇴직급여(퇴직금)를 지급받기 위한 최소 계속근로기간은?',
+      options: ['① 6개월', '② 1년', '③ 2년', '④ 3년'],
+      answer: 1,
+      explanation: '계속근로기간 1년 이상인 근로자에게 1년에 대해 30일분 이상의 평균임금을 퇴직금으로 지급해야 합니다. 예) 평균임금 일 100,000원, 5년 근무 → 100,000원 × 30일 × 5년 = 15,000,000원. 단, 4주간 평균 1주 소정근로시간이 15시간 미만인 근로자는 제외됩니다.',
+      reference: '근로자퇴직급여 보장법 제8조',
+    },
+    {
+      id: 14,
+      category: '임금 및 퇴직금',
+      type: 'ox',
+      question: '근로자가 퇴직한 경우, 사용자는 특별한 사정이 없는 한 14일 이내에 임금·퇴직금 등 모든 금품을 지급해야 한다.',
+      options: ['O', 'X'],
+      answer: 0,
+      explanation: '근로자가 사망 또는 퇴직한 경우, 그 지급사유가 발생한 때부터 14일 이내에 임금, 보상금, 그 밖의 모든 금품을 지급해야 합니다. 다만 당사자 간 합의로 기일을 연장할 수 있습니다.',
+      reference: '근로기준법 제36조',
+    },
+    {
+      id: 15,
+      category: '임금 및 퇴직금',
+      type: 'multiple_choice',
+      question: '근로기준법상 평균임금은 산정사유가 발생한 날 이전 몇 개월간의 임금총액을 그 기간의 총일수로 나눈 금액인가?',
+      options: ['① 1개월', '② 3개월', '③ 6개월', '④ 12개월'],
+      answer: 1,
+      explanation: '평균임금은 산정사유 발생일 이전 3개월간 그 근로자에게 지급된 임금총액을 그 기간의 총일수로 나눈 금액입니다. 산출된 금액이 통상임금보다 적으면 통상임금을 평균임금으로 봅니다. 퇴직금·휴업수당 산정의 기준이 됩니다.',
+      reference: '근로기준법 제2조 제1항 제6호',
+    },
+
+    // ── 근로계약 및 취업규칙 (5) ──────────────────
+    {
+      id: 16,
+      category: '근로계약 및 취업규칙',
+      type: 'multiple_choice',
+      question: '사용자가 근로계약을 체결할 때 근로자에게 서면으로 명시하고 교부해야 하는 사항이 <strong class="text-red-600">아닌</strong> 것은?',
+      options: [
+        '① 임금의 구성항목·계산방법·지급방법',
+        '② 소정근로시간',
+        '③ 휴일 및 연차유급휴가',
+        '④ 회사의 영업비밀 유지의무',
+      ],
+      answer: 3,
+      explanation: '서면 명시·교부 사항은 임금의 구성항목·계산방법·지급방법, 소정근로시간, 휴일, 연차유급휴가 등입니다. 영업비밀 유지의무는 별도의 약정사항이며 법정 명시사항이 아닙니다.',
+      reference: '근로기준법 제17조',
+    },
+    {
+      id: 17,
+      category: '근로계약 및 취업규칙',
+      type: 'ox',
+      question: '사용자는 근로자를 해고하려면 적어도 30일 전에 예고를 하거나 30일분 이상의 통상임금을 지급해야 한다.',
+      options: ['O', 'X'],
+      answer: 0,
+      explanation: '사용자는 근로자를 해고하려면 적어도 30일 전에 예고하거나, 30일분 이상의 통상임금을 해고예고수당으로 지급해야 합니다. 단, 천재·사변, 근로자의 고의 등 일정 사유가 있는 경우 예외가 인정됩니다.',
+      reference: '근로기준법 제26조',
+    },
+    {
+      id: 18,
+      category: '근로계약 및 취업규칙',
+      type: 'multiple_choice',
+      question: '부당해고 등에 대한 구제신청은 부당해고 등이 있었던 날부터 어느 기간 이내에 노동위원회에 해야 하는가?',
+      options: ['① 1개월 이내', '② 2개월 이내', '③ 3개월 이내', '④ 6개월 이내'],
+      answer: 2,
+      explanation: '부당해고 등이 있었던 날부터 3개월 이내에 노동위원회에 구제신청을 할 수 있습니다.',
+      reference: '근로기준법 제28조 제2항',
+    },
+    {
+      id: 19,
+      category: '근로계약 및 취업규칙',
+      type: 'multiple_choice',
+      question: '취업규칙을 작성하여 고용노동부장관에게 신고해야 하는 사용자의 기준은?',
+      options: [
+        '① 상시 5명 이상의 근로자를 사용하는 사용자',
+        '② 상시 10명 이상의 근로자를 사용하는 사용자',
+        '③ 상시 30명 이상의 근로자를 사용하는 사용자',
+        '④ 상시 50명 이상의 근로자를 사용하는 사용자',
+      ],
+      answer: 1,
+      explanation: '상시 10명 이상의 근로자를 사용하는 사용자는 취업규칙을 작성하여 고용노동부장관에게 신고해야 하며, 변경하는 경우에도 같습니다.',
+      reference: '근로기준법 제93조',
+    },
+    {
+      id: 20,
+      category: '근로계약 및 취업규칙',
+      type: 'multiple_choice',
+      question: '사용자가 취업규칙을 근로자에게 불리하게 변경하려는 경우 거쳐야 하는 절차는?',
+      options: [
+        '① 근로자 과반수의 의견 청취만 하면 된다',
+        '② 근로자 과반수(또는 과반수 노동조합)의 동의를 받아야 한다',
+        '③ 노동위원회의 승인을 받아야 한다',
+        '④ 고용노동부장관의 인가를 받아야 한다',
+      ],
+      answer: 1,
+      explanation: '취업규칙을 근로자에게 불이익하게 변경하는 경우, 근로자 과반수로 조직된 노동조합이 있으면 그 노동조합의, 없으면 근로자 과반수의 동의를 받아야 합니다. 유리한 변경은 의견 청취로 가능합니다.',
+      reference: '근로기준법 제94조 제1항',
+    },
+  ];
+
+  /* ============================================
+   * 화면 전환 단일 함수
+   * ============================================ */
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    if (target) target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  /* ============================================
+   * 시작 화면 - 이름 입력 검증
+   * ============================================ */
+  const inputName    = document.getElementById('input-name');
+  const inputEmpno   = document.getElementById('input-empno');
+  const btnStart     = document.getElementById('btn-start');
+  const inputWarning = document.getElementById('input-warning');
+
+  function refreshStartButton() {
+    const name  = inputName.value.trim();
+    const empno = inputEmpno.value.trim();
+    btnStart.disabled = name.length === 0 || empno.length === 0;
+    if (name.length > 0 && empno.length > 0) inputWarning.classList.add('hidden');
+  }
+
+  inputName.addEventListener('input', refreshStartButton);
+  inputEmpno.addEventListener('input', refreshStartButton);
+
+  btnStart.addEventListener('click', () => {
+    const name  = inputName.value.trim();
+    const empno = inputEmpno.value.trim();
+    if (name.length === 0 || empno.length === 0) {
+      inputWarning.classList.remove('hidden');
+      (name.length === 0 ? inputName : inputEmpno).focus();
+      return;
+    }
+    state.userName   = name;
+    state.employeeId = empno;
+    renderIntro();
+    showScreen('intro');
+  });
+
+  // 엔터 키로도 시작 가능 (양쪽 필드 어디서나)
+  [inputName, inputEmpno].forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !btnStart.disabled) btnStart.click();
+    });
+  });
+
+  /* ============================================
+   * 안내 화면 렌더링
+   * ============================================ */
+  function renderIntro() {
+    document.getElementById('greet-name').textContent  = state.userName;
+    document.getElementById('greet-empno').textContent = state.employeeId;
+
+    const ol = document.getElementById('category-cards');
+    ol.innerHTML = CATEGORIES.map((c, i) => `
+      <li class="flex items-center gap-3 bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+        <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center">
+          ${i + 1}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">${c.icon}</span>
+            <span class="font-semibold text-slate-800">${c.key}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">${c.desc} · 5문항</p>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  /* ============================================
+   * 안내 화면 버튼
+   * ============================================ */
+  document.getElementById('btn-back-to-start').addEventListener('click', () => {
+    showScreen('start');
+  });
+
+  document.getElementById('btn-go-quiz').addEventListener('click', () => {
+    state.currentQ  = 0;
+    state.answers   = [];
+    state.score     = 0;
+    state.wrongIds  = [];
+    state.startTime = new Date();
+    renderQuestion();
+    showScreen('quiz');
+  });
+
+  /* ============================================
+   * 문항 화면 렌더링
+   * ============================================ */
+
+  // 인덱스 → 카테고리 인덱스(0~3) 매핑
+  function getCategoryIndex(qIdx) {
+    return Math.floor(qIdx / 5);
+  }
+
+  // 카테고리 내 위치(1~5)
+  function getPositionInCategory(qIdx) {
+    return (qIdx % 5) + 1;
+  }
+
+  // 문항 유형 뱃지 라벨/스타일
+  const TYPE_BADGE = {
+    multiple_choice: { label: '객관식', cls: 'bg-brand-100 text-brand-700' },
+    ox:              { label: 'O / X',  cls: 'bg-emerald-100 text-emerald-700' },
+    case:            { label: '사례형', cls: 'bg-amber-100 text-amber-800' },
+  };
+
+  // 카테고리 스텝 인디케이터 렌더링
+  function renderStepIndicator() {
+    const curCat = getCategoryIndex(state.currentQ);
+    const ol = document.getElementById('step-indicator');
+
+    ol.innerHTML = CATEGORIES.map((c, i) => {
+      let status, circleCls, labelCls, content;
+
+      if (i < curCat) {
+        // 완료
+        status = 'done';
+        circleCls = 'bg-brand-500 text-white';
+        labelCls  = 'text-brand-700 font-semibold';
+        content   = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 011.4-1.4l3.9 3.9 6.7-6.7a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>';
+      } else if (i === curCat) {
+        // 진행 중
+        status = 'current';
+        circleCls = 'bg-brand-500 text-white ring-4 ring-brand-200';
+        labelCls  = 'text-brand-700 font-bold';
+        content   = `<span class="text-xs font-bold">${i + 1}</span>`;
+      } else {
+        // 미진행
+        status = 'pending';
+        circleCls = 'bg-slate-200 text-slate-400';
+        labelCls  = 'text-slate-400';
+        content   = `<span class="text-xs font-bold">${i + 1}</span>`;
+      }
+
+      return `
+        <li class="flex-1 min-w-0 flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${circleCls}">
+            ${content}
+          </div>
+          <span class="text-[10px] sm:text-xs ${labelCls} truncate w-full text-center" data-status="${status}">
+            <span class="hidden sm:inline">${c.key}</span>
+            <span class="sm:hidden">${status === 'current' ? c.key.split(' ')[0] : c.icon}</span>
+          </span>
+        </li>
+      `;
+    }).join('');
+  }
+
+  // 문항 텍스트/유형 뱃지/보기 렌더링
+  function renderQuestion() {
+    const q = questions[state.currentQ];
+    const catIdx = getCategoryIndex(state.currentQ);
+    const posInCat = getPositionInCategory(state.currentQ);
+
+    // 스텝 인디케이터
+    renderStepIndicator();
+
+    // 진행률 표시
+    document.getElementById('progress-cat').textContent =
+      `${CATEGORIES[catIdx].key} ${posInCat} / 5`;
+    document.getElementById('progress-total').textContent =
+      `전체 ${state.currentQ + 1} / 20`;
+    document.getElementById('progress-bar').style.width =
+      `${((state.currentQ + 1) / 20) * 100}%`;
+
+    // 유형 뱃지
+    const badge = TYPE_BADGE[q.type];
+    const badgeEl = document.getElementById('q-type-badge');
+    badgeEl.textContent = badge.label;
+    badgeEl.className = `inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`;
+
+    document.getElementById('q-num-badge').textContent = `Q.${q.id}`;
+
+    // 사례형 상황 박스 분리 표시
+    const caseBox = document.getElementById('q-case-box');
+    const caseText = document.getElementById('q-case-text');
+    const qText = document.getElementById('q-text');
+
+    if (q.type === 'case') {
+      // 마지막 물음표 또는 "?"가 있는 문장을 질문으로 분리
+      const text = q.question;
+      const lastSentenceMatch = text.match(/^(.*?[.!])\s*([^.!?]+\?[^?]*)$/);
+      if (lastSentenceMatch) {
+        caseText.textContent = lastSentenceMatch[1].trim();
+        qText.innerHTML      = lastSentenceMatch[2].trim();
+        caseBox.classList.remove('hidden');
+      } else {
+        caseBox.classList.add('hidden');
+        qText.innerHTML = text;
+      }
+    } else {
+      caseBox.classList.add('hidden');
+      // 부정형 강조 등 통제된 <strong> 태그 허용
+      qText.innerHTML = q.question;
+    }
+
+    // 보기 렌더링
+    renderOptions(q);
+
+    // 피드백 영역 초기화 (다음 문항으로 넘어올 때)
+    document.getElementById('result-banner').classList.add('hidden');
+    document.getElementById('explanation-box').classList.add('hidden');
+
+    // 버튼 상태 초기화
+    const submitBtn = document.getElementById('btn-submit');
+    const nextBtn   = document.getElementById('btn-next');
+    submitBtn.classList.remove('hidden');
+    submitBtn.disabled = state.answers[state.currentQ] === undefined;
+    nextBtn.classList.add('hidden');
+    nextBtn.textContent = state.currentQ === questions.length - 1 ? '결과 보기' : '다음 문항 →';
+  }
+
+  // 제출 여부에 따라 보기 스타일 분기 (revealed=true면 정답·오답 색상 표시)
+  function renderOptions(q, revealed = false) {
+    const wrap = document.getElementById('q-options');
+    const selected = state.answers[state.currentQ];
+    const correct = q.answer;
+
+    // 보기별 스타일 계산
+    const buildBtn = (opt, i, isOX) => {
+      const isSelected = selected === i;
+      const isCorrect  = i === correct;
+
+      let cls, icon = '', extraSubCls = '';
+
+      if (revealed) {
+        // 제출 후: 정답·오답 색상 적용, 클릭 불가
+        if (isCorrect) {
+          cls = isOX
+            ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+            : 'bg-emerald-50 border-emerald-500 text-emerald-800 font-semibold';
+          icon = isOX
+            ? ''
+            : '<span class="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs">✓</span>';
+          extraSubCls = isOX ? 'text-white/80' : 'text-slate-400';
+        } else if (isSelected && !isCorrect) {
+          cls = isOX
+            ? 'bg-red-500 text-white border-red-500'
+            : 'bg-red-50 border-red-400 text-red-800 font-semibold';
+          icon = isOX
+            ? ''
+            : '<span class="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs">✕</span>';
+          extraSubCls = isOX ? 'text-white/80' : 'text-slate-400';
+        } else {
+          cls = 'bg-white border-slate-200 text-slate-400 opacity-60';
+          extraSubCls = 'text-slate-300';
+        }
+      } else {
+        // 제출 전: 선택 강조
+        if (isSelected) {
+          cls = isOX
+            ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/20'
+            : 'bg-brand-50 border-brand-500 text-brand-700 font-semibold';
+          extraSubCls = isOX ? 'text-white/80' : 'text-slate-400';
+        } else {
+          cls = isOX
+            ? 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:bg-brand-50'
+            : 'bg-white border-slate-200 text-slate-700 hover:border-brand-300 hover:bg-brand-50/50';
+          extraSubCls = 'text-slate-400';
+        }
+      }
+
+      if (isOX) {
+        const sub = opt === 'O' ? '맞다' : '아니다';
+        return `
+          <button type="button" data-idx="${i}" class="option-btn flex flex-col items-center justify-center py-6 rounded-xl border-2 font-bold text-3xl transition ${cls}" ${revealed ? 'disabled' : ''}>
+            <span>${opt}</span>
+            <span class="text-xs font-medium mt-1 ${extraSubCls}">${sub}</span>
+          </button>
+        `;
+      } else {
+        return `
+          <button type="button" data-idx="${i}" class="option-btn w-full text-left px-4 py-3 rounded-xl border-2 transition flex items-center justify-between ${cls}" ${revealed ? 'disabled' : ''}>
+            <span>${opt}</span>${icon}
+          </button>
+        `;
+      }
+    };
+
+    if (q.type === 'ox') {
+      wrap.className = 'mt-5 grid grid-cols-2 gap-3';
+      wrap.innerHTML = q.options.map((opt, i) => buildBtn(opt, i, true)).join('');
+    } else {
+      wrap.className = 'mt-5 space-y-2.5';
+      wrap.innerHTML = q.options.map((opt, i) => buildBtn(opt, i, false)).join('');
+    }
+
+    // 제출 전에만 클릭 핸들러 부착
+    if (!revealed) {
+      wrap.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.idx);
+          state.answers[state.currentQ] = idx;
+          renderOptions(q, false);
+          document.getElementById('btn-submit').disabled = false;
+        });
+      });
+    }
+  }
+
+  /* 정답 제출 — 채점 + 인라인 피드백 표시 */
+  document.getElementById('btn-submit').addEventListener('click', () => {
+    const q = questions[state.currentQ];
+    const selected = state.answers[state.currentQ];
+    if (selected === undefined) return;
+
+    const isCorrect = selected === q.answer;
+    if (isCorrect) {
+      state.score++;
+    } else {
+      state.wrongIds.push(q.id);
+    }
+
+    // 보기 영역을 제출 후 모드로 재렌더 (정답·오답 색상 표시)
+    renderOptions(q, true);
+
+    // 결과 배너 표시
+    const banner = document.getElementById('result-banner');
+    if (isCorrect) {
+      banner.className = 'mt-4 rounded-xl p-3 text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800';
+      banner.textContent = '✅ 정답입니다!';
+    } else {
+      banner.className = 'mt-4 rounded-xl p-3 text-sm font-semibold bg-red-50 border border-red-200 text-red-800';
+      banner.textContent = `❌ 오답입니다. 정답은 ${q.options[q.answer]} 입니다.`;
+    }
+    banner.classList.remove('hidden');
+
+    // 해설 박스 표시
+    document.getElementById('explanation-text').textContent = q.explanation;
+    document.getElementById('reference-badge').textContent = q.reference;
+    document.getElementById('explanation-box').classList.remove('hidden');
+
+    // 버튼 전환: 정답 확인 → 다음 문항/결과 보기
+    document.getElementById('btn-submit').classList.add('hidden');
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.textContent = state.currentQ === questions.length - 1 ? '결과 보기' : '다음 문항 →';
+    nextBtn.classList.remove('hidden');
+  });
+
+  /* 다음 문항 / 결과 보기 */
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (state.currentQ === questions.length - 1) {
+      renderResult();
+      showScreen('result');
+      return;
+    }
+    state.currentQ++;
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ============================================
+   * 결과 요약 화면 렌더링
+   * ============================================ */
+
+  // 점수 구간별 메시지
+  function getScoreMessage(score) {
+    if (score >= 18) return { icon: '🏆', text: '우수! 근로기준법 전문가입니다.', cls: 'bg-amber-50 border border-amber-200 text-amber-800' };
+    if (score >= 14) return { icon: '👍', text: '양호! 핵심 내용을 잘 이해하고 있습니다.', cls: 'bg-emerald-50 border border-emerald-200 text-emerald-800' };
+    if (score >= 10) return { icon: '📚', text: '보통. 취약 영역을 다시 확인해보세요.', cls: 'bg-brand-50 border border-brand-200 text-brand-700' };
+    return { icon: '💪', text: '분발! 근로기준법을 처음부터 학습해보세요.', cls: 'bg-red-50 border border-red-200 text-red-700' };
+  }
+
+  // 카테고리별 정답수 계산 (0~4, 5~9, 10~14, 15~19)
+  function calcCategoryScores() {
+    return CATEGORIES.map((c, ci) => {
+      const start = ci * 5;
+      let correct = 0;
+      for (let i = start; i < start + 5; i++) {
+        if (state.answers[i] === questions[i].answer) correct++;
+      }
+      return { key: c.key, icon: c.icon, correct, total: 5 };
+    });
+  }
+
+  function renderResult() {
+    // 이름 + 사번 + 점수 + 정답률
+    document.getElementById('result-name').textContent  = state.userName;
+    document.getElementById('result-empno').textContent = state.employeeId;
+    document.getElementById('result-score').textContent = state.score;
+    document.getElementById('result-rate').textContent  = `${Math.round((state.score / 20) * 100)}%`;
+
+    // 점수 메시지
+    const msg = getScoreMessage(state.score);
+    const msgEl = document.getElementById('result-message');
+    msgEl.className = `mt-4 mx-auto max-w-[420px] rounded-xl p-3 text-sm font-semibold ${msg.cls}`;
+    msgEl.textContent = `${msg.icon} ${msg.text}`;
+
+    // 카테고리별 결과
+    const catScores = calcCategoryScores();
+    const minCorrect = Math.min(...catScores.map(c => c.correct));
+    // 모든 카테고리 정답수가 같으면 취약영역 강조하지 않음
+    const allEqual = catScores.every(c => c.correct === minCorrect);
+    const weakestIdx = allEqual ? -1 : catScores.findIndex(c => c.correct === minCorrect);
+
+    const ul = document.getElementById('result-by-category');
+    ul.innerHTML = catScores.map((c, i) => {
+      const isWeak = i === weakestIdx;
+      const pct = (c.correct / c.total) * 100;
+      const barColor = isWeak ? 'bg-red-500' : 'bg-brand-500';
+      const labelColor = isWeak ? 'text-red-600 font-bold' : 'text-slate-700 font-semibold';
+      const countColor = isWeak ? 'text-red-600' : 'text-slate-700';
+      return `
+        <li>
+          <div class="flex items-center justify-between text-sm mb-1.5">
+            <span class="${labelColor}">${c.icon} ${c.key}${isWeak ? ' <span class="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded ml-1">취약</span>' : ''}</span>
+            <span class="${countColor} font-bold tabular-nums">${c.correct} / ${c.total}</span>
+          </div>
+          <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full ${barColor} rounded-full transition-all" style="width: ${pct}%"></div>
+          </div>
+        </li>
+      `;
+    }).join('');
+
+    // 취약 영역 안내
+    const weakNote = document.getElementById('weakest-note');
+    if (weakestIdx >= 0) {
+      document.getElementById('weakest-name').textContent = catScores[weakestIdx].key;
+      weakNote.classList.remove('hidden');
+    } else {
+      weakNote.classList.add('hidden');
+    }
+
+    // 오답 문항 목록
+    const wrongCount = state.wrongIds.length;
+    document.getElementById('wrong-count').textContent = wrongCount;
+
+    const wrongList  = document.getElementById('wrong-list');
+    const wrongEmpty = document.getElementById('wrong-empty');
+    wrongList.classList.add('hidden');
+    wrongEmpty.classList.add('hidden');
+    document.getElementById('wrong-chevron').classList.remove('rotate-180');
+
+    if (wrongCount === 0) {
+      // 토글 펼쳤을 때 빈 상태 메시지를 보여줄 수 있도록 준비
+      wrongList.innerHTML = '';
+    } else {
+      wrongList.innerHTML = state.wrongIds.map(id => {
+        const q = questions.find(x => x.id === id);
+        const userAnsIdx = state.answers[q.id - 1];
+        const userAns = userAnsIdx !== undefined ? q.options[userAnsIdx] : '미응답';
+        // 문제 텍스트 요약 (최대 60자)
+        const summary = q.question.length > 60 ? q.question.slice(0, 60) + '…' : q.question;
+        return `
+          <li class="px-5 py-3">
+            <div class="flex items-start gap-2">
+              <span class="text-xs font-bold text-slate-400 mt-0.5">Q.${q.id}</span>
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 mt-0.5">${q.category}</span>
+            </div>
+            <p class="mt-1.5 text-sm text-slate-700 leading-relaxed">${summary}</p>
+            <div class="mt-2 flex flex-col gap-1 text-xs">
+              <span class="text-red-600">내 답: ${userAns}</span>
+              <span class="text-emerald-700 font-semibold">정답: ${q.options[q.answer]}</span>
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+  }
+
+  /* 오답 목록 토글 */
+  document.getElementById('btn-toggle-wrong').addEventListener('click', () => {
+    const wrongList  = document.getElementById('wrong-list');
+    const wrongEmpty = document.getElementById('wrong-empty');
+    const chevron    = document.getElementById('wrong-chevron');
+    const isOpen = !chevron.classList.contains('rotate-180');
+
+    if (isOpen) {
+      if (state.wrongIds.length === 0) {
+        wrongEmpty.classList.remove('hidden');
+      } else {
+        wrongList.classList.remove('hidden');
+      }
+      chevron.classList.add('rotate-180');
+    } else {
+      wrongList.classList.add('hidden');
+      wrongEmpty.classList.add('hidden');
+      chevron.classList.remove('rotate-180');
+    }
+  });
+
+  /* 다시 도전하기 */
+  document.getElementById('btn-retry').addEventListener('click', () => {
+    state.userName    = '';
+    state.employeeId  = '';
+    state.currentQ    = 0;
+    state.answers     = [];
+    state.score       = 0;
+    state.wrongIds    = [];
+    state.startTime   = null;
+    inputName.value   = '';
+    inputEmpno.value  = '';
+    btnStart.disabled = true;
+    inputWarning.classList.add('hidden');
+    showScreen('start');
+  });
+
+  /* ============================================
+   * Storage 연동 (window.storage Persistent Storage API)
+   *  - 모든 호출은 try-catch로 감싸 실패 시 무시
+   *  - 동기/비동기 어느 쪽이든 안전하게 동작하도록 await 사용
+   * ============================================ */
+
+  // window.storage 존재 여부 확인
+  function hasStorage() {
+    return typeof window !== 'undefined' && window.storage && typeof window.storage.setItem === 'function';
+  }
+
+  // 안전한 setItem
+  async function safeSet(key, value, options) {
+    if (!hasStorage()) throw new Error('storage unavailable');
+    return await window.storage.setItem(key, value, options);
+  }
+
+  // 안전한 getItem
+  async function safeGet(key) {
+    if (!hasStorage()) throw new Error('storage unavailable');
+    try {
+      return await window.storage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 리더보드 키 모두 조회 (shared:true 영역)
+  async function safeListLeaderboard() {
+    if (!hasStorage()) throw new Error('storage unavailable');
+    // 다양한 list API 시그니처 호환
+    const out = [];
+    try {
+      const list = typeof window.storage.list === 'function'
+        ? await window.storage.list({ prefix: 'leaderboard:', shared: true })
+        : null;
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          // list가 키 문자열 배열이면 각각 조회, 객체 배열이면 그대로 사용
+          if (typeof item === 'string') {
+            const v = await safeGet(item);
+            if (v) out.push(typeof v === 'string' ? JSON.parse(v) : v);
+          } else if (item && typeof item === 'object') {
+            const v = item.value !== undefined ? item.value : (item.key ? await safeGet(item.key) : null);
+            if (v) out.push(typeof v === 'string' ? JSON.parse(v) : v);
+          }
+        }
+      }
+    } catch (e) {
+      // 무시 — 호출자가 빈 배열로 처리
+    }
+    return out;
+  }
+
+  // 결과 저장 — 리더보드 + 개인 기록 양쪽 갱신
+  async function saveResult() {
+    const now = new Date();
+    const dateIso = now.toISOString();
+    const catScores = calcCategoryScores();
+
+    // 1) 개인 상세 기록 (shared: false) — 키: 사번
+    const userKey = `user:${state.employeeId}`;
+    let userData;
+    try {
+      const raw = await safeGet(userKey);
+      userData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+    } catch (e) {
+      userData = null;
+    }
+
+    if (!userData || !Array.isArray(userData.records)) {
+      userData = { name: state.userName, employeeId: state.employeeId, records: [], bestScore: 0 };
+    }
+
+    const newRecord = {
+      date: dateIso,
+      score: state.score,
+      total: 20,
+      wrongIds: [...state.wrongIds],
+      categoryScores: catScores.map(c => ({ key: c.key, correct: c.correct, total: c.total })),
+    };
+    userData.records.push(newRecord);
+    userData.bestScore  = Math.max(userData.bestScore || 0, state.score);
+    userData.name       = state.userName;     // 이름 변경 시 최신 이름 반영
+    userData.employeeId = state.employeeId;
+
+    await safeSet(userKey, JSON.stringify(userData), { shared: false });
+
+    // 2) 리더보드 요약 (shared: true) — 키: 사번
+    const lbKey = `leaderboard:${state.employeeId}`;
+    let lbData;
+    try {
+      const raw = await safeGet(lbKey);
+      lbData = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+    } catch (e) {
+      lbData = null;
+    }
+
+    const wasNewBest = !lbData || state.score > (lbData.bestScore || 0);
+    lbData = {
+      name: state.userName,
+      employeeId: state.employeeId,
+      bestScore: Math.max(lbData?.bestScore || 0, state.score),
+      // bestScore가 갱신될 때만 firstAchievedAt(=최초 달성일) 갱신
+      firstAchievedAt: wasNewBest ? dateIso : (lbData.firstAchievedAt || dateIso),
+      totalAttempts: (lbData?.totalAttempts || 0) + 1,
+      lastDate: dateIso,
+    };
+
+    await safeSet(lbKey, JSON.stringify(lbData), { shared: true });
+
+    return { userData, lbData };
+  }
+
+  /* ============================================
+   * 리더보드 렌더링
+   * ============================================ */
+  async function renderLeaderboard(myUserData) {
+    const errEl = document.getElementById('storage-error');
+    errEl.classList.add('hidden');
+
+    let entries = [];
+    try {
+      entries = await safeListLeaderboard();
+    } catch (e) {
+      entries = [];
+      errEl.classList.remove('hidden');
+    }
+
+    // 정렬: bestScore 내림차순 → 동점 시 firstAchievedAt 오름차순
+    entries.sort((a, b) => {
+      if ((b.bestScore || 0) !== (a.bestScore || 0)) {
+        return (b.bestScore || 0) - (a.bestScore || 0);
+      }
+      const aT = a.firstAchievedAt || a.lastDate || '';
+      const bT = b.firstAchievedAt || b.lastDate || '';
+      return aT.localeCompare(bT);
+    });
+
+    // 내 순위 계산 (사번 기준)
+    const myRankIdx = entries.findIndex(e => e.employeeId === state.employeeId);
+    const myRank = myRankIdx >= 0 ? myRankIdx + 1 : '-';
+
+    // 표 본문 렌더링
+    const tbody = document.getElementById('leaderboard-body');
+    const emptyEl = document.getElementById('leaderboard-empty');
+
+    if (entries.length === 0) {
+      tbody.innerHTML = '';
+      emptyEl.classList.remove('hidden');
+    } else {
+      emptyEl.classList.add('hidden');
+      const medals = ['🥇', '🥈', '🥉'];
+      tbody.innerHTML = entries.map((e, i) => {
+        const isMe = e.employeeId === state.employeeId;
+        const rate = Math.round(((e.bestScore || 0) / 20) * 100);
+        const rowCls = isMe ? 'bg-yellow-50' : '';
+        const nameCls = isMe ? 'font-bold text-brand-700' : 'text-slate-700';
+        const empnoCls = isMe ? 'text-brand-500' : 'text-slate-400';
+        const rankDisplay = i < 3 ? medals[i] : (i + 1);
+        return `
+          <tr class="${rowCls}">
+            <td class="px-3 py-2.5 align-top ${i < 3 ? 'text-lg' : 'text-sm font-semibold text-slate-600'}">${rankDisplay}</td>
+            <td class="px-2 py-2.5">
+              <div class="${nameCls}">
+                ${escapeHtml(e.name || '-')}${isMe ? ' <span class="text-[10px] bg-brand-500 text-white px-1.5 py-0.5 rounded ml-1">나</span>' : ''}
+              </div>
+              <div class="text-[11px] ${empnoCls} mt-0.5 tabular-nums">${escapeHtml(e.employeeId || '-')}</div>
+            </td>
+            <td class="px-2 py-2.5 text-right align-top font-bold tabular-nums">${e.bestScore || 0}<span class="text-xs text-slate-400">/20</span></td>
+            <td class="px-2 py-2.5 text-right align-top tabular-nums text-slate-600">${rate}%</td>
+            <td class="px-3 py-2.5 text-right align-top tabular-nums text-slate-600">${e.totalAttempts || 0}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 내 기록 요약
+    document.getElementById('my-name').textContent  = state.userName;
+    document.getElementById('my-empno').textContent = state.employeeId;
+    document.getElementById('my-rank').textContent  = myRank;
+
+    const myEntry = entries.find(e => e.employeeId === state.employeeId);
+    document.getElementById('my-best').textContent =
+      myEntry ? myEntry.bestScore : (myUserData?.bestScore ?? state.score);
+    document.getElementById('my-attempts').textContent =
+      myEntry ? myEntry.totalAttempts : (myUserData?.records?.length ?? 1);
+
+    // 직전 회차 대비 점수 변화
+    const deltaEl = document.getElementById('my-delta');
+    deltaEl.classList.add('hidden');
+    if (myUserData && Array.isArray(myUserData.records) && myUserData.records.length >= 2) {
+      const recs = myUserData.records;
+      const prev = recs[recs.length - 2].score;
+      const cur  = recs[recs.length - 1].score;
+      const diff = cur - prev;
+      let txt;
+      if (diff > 0)      txt = `📈 직전보다 +${diff}점 상승`;
+      else if (diff < 0) txt = `📉 직전보다 ${diff}점 하락`;
+      else               txt = `➡️ 직전과 동일한 점수`;
+      deltaEl.textContent = txt;
+      deltaEl.classList.remove('hidden');
+    } else if (myUserData && myUserData.records && myUserData.records.length === 1) {
+      deltaEl.textContent = '✨ 첫 응시 기록입니다';
+      deltaEl.classList.remove('hidden');
+    }
+  }
+
+  // 표에 들어가는 사용자 이름 XSS 방지
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+
+  /* 순위 보기 — 결과 저장 후 리더보드 화면으로 전환 */
+  document.getElementById('btn-leaderboard').addEventListener('click', async () => {
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.remove('hidden');
+
+    let userData = null;
+    try {
+      const result = await saveResult();
+      userData = result.userData;
+    } catch (e) {
+      // Storage 접근 실패 — 로컬에서 임시 userData 구성
+      userData = {
+        name: state.userName,
+        records: [{
+          date: new Date().toISOString(),
+          score: state.score,
+          total: 20,
+          wrongIds: [...state.wrongIds],
+          categoryScores: calcCategoryScores().map(c => ({ key: c.key, correct: c.correct, total: c.total })),
+        }],
+        bestScore: state.score,
+      };
+    }
+
+    try {
+      await renderLeaderboard(userData);
+    } catch (e) {
+      document.getElementById('storage-error').classList.remove('hidden');
+    } finally {
+      overlay.classList.add('hidden');
+      showScreen('leaderboard');
+    }
+  });
+
+  /* 리더보드 → 다시 도전하기 */
+  document.getElementById('btn-back-home').addEventListener('click', () => {
+    state.userName    = '';
+    state.employeeId  = '';
+    state.currentQ    = 0;
+    state.answers     = [];
+    state.score       = 0;
+    state.wrongIds    = [];
+    state.startTime   = null;
+    inputName.value   = '';
+    inputEmpno.value  = '';
+    btnStart.disabled = true;
+    inputWarning.classList.add('hidden');
+    showScreen('start');
+  });
+  </script>
+</body>
+</html>
